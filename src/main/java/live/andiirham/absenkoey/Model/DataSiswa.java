@@ -2,14 +2,14 @@ package live.andiirham.absenkoey.Model;
 
 public class DataSiswa {
     public long id;
-    public int no_abs;
+    public String no_abs;
     public String nama;
     public String no_bp;
     public String jam;
 
     public DataSiswa() { }
 
-    public DataSiswa(long id, int no_abs, String nama, String no_bp, String jam) {
+    public DataSiswa(long id, String no_abs, String nama, String no_bp, String jam) {
         this.id = id;
         this.no_abs = no_abs;
         this.nama = nama;

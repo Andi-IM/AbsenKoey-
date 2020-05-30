@@ -15,9 +15,11 @@ import com.linecorp.bot.model.message.TemplateMessage;
 import com.linecorp.bot.model.message.TextMessage;
 import com.linecorp.bot.model.objectmapper.ModelObjectMapper;
 import com.linecorp.bot.model.profile.UserProfileResponse;
+import live.andiirham.absenkoey.Model.DaftarAbsen;
 import live.andiirham.absenkoey.Model.LineEventsModel;
 import live.andiirham.absenkoey.Service.BotService;
 import live.andiirham.absenkoey.Service.BotTemplate;
+import live.andiirham.absenkoey.Service.DBService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -140,9 +142,14 @@ public class BotController {
         }
     }
 
+    private void handleRegisteringUser(String replyToken, String[] words)
+    {
+
+    }
+
     private void broadcastNewFriendJoined(String eventId, String newFriendId) {
         List<String> listIds;
-        List<JointEvents> jointEvents = dbService.getJoinedEvent(eventId);
+        List<DaftarAbsen> jointEvents = DBService;
 
         listIds = jointEvents.stream()
                 .filter(jointEvent -> !jointEvent.user_id.equals(newFriendId))

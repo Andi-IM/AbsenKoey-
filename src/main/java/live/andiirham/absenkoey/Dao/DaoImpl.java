@@ -30,8 +30,10 @@ public class DaoImpl implements Dao
     // query untuk table absen
     private final static String ABSEN_TABLE="tbl_absen";
     private final static String SQL_SELECT_ALL_ABSEN="SELECT id, no_absen, nama, no_bp, jam FROM "+ABSEN_TABLE;
-    private final static String SQL_JOIN_EVENT="INSERT INTO"+ABSEN_TABLE+"(no_absen, nama, no_bp, jam) VALUES (?,?,?,?)";
-    
+    private final static String SQL_JOIN_EVENT="INSERT INTO"+ABSEN_TABLE+"(no_absen, nama, no_bp, jam) VALUES (?,?,?,?);";
+    private static final String SQL_GET_BY_ABSEN = SQL_SELECT_ALL_ABSEN + "WHERE LOWER (no_absen) LIKE LOWER(?);";
+    private final static String SQL_GET_BY_JOIN=SQL_SELECT_ALL_ABSEN + " WHERE no_absen = ? AND user_id = ?;";
+
     private JdbcTemplate mJdbc;
 
     // mendapatkan resultset
@@ -84,7 +86,7 @@ public class DaoImpl implements Dao
             {
                 DataSiswa ds = new DataSiswa(
                         rs.getLong("id"),
-                        rs.getInt("no_absen"),
+                        rs.getString("no_absen"),
                         rs.getString("nama"),
                         rs.getString("no_bp"),
                         rs.getString("jam")
@@ -105,7 +107,7 @@ public class DaoImpl implements Dao
             {
                 DataSiswa ds = new DataSiswa(
                         rs.getLong("id"),
-                        rs.getInt("no_absen"),
+                        rs.getString("no_absen"),
                         rs.getString("nama"),
                         rs.getString("no_bp"),
                         rs.getString("jam")
@@ -136,14 +138,29 @@ public class DaoImpl implements Dao
     }
 
     @Override
-    public int registerLineId(int no_absen, String nama, String no_bp) {
+    public int registerLineId(String no_absen, String nama, String aDisplayName) {
         return mJdbc.update(SQL_REGISTER,
-                new Object[]{no_absen, nama, no_bp, timestamp});
+                new Object[]{no_absen, nama, aDisplayName, aDisplayName});
+    }
+
+    @Override
+    public int joinAbsen(String no_absen, String nama, String no_bp) {
+        return mJdbc.update(SQL_JOIN_EVENT, new Object[]{no_absen, nama, no_bp, timestamp});
     }
 
     @Override
     public List<DataSiswa> getAbsen()
     {
         return mJdbc.query(SQL_SELECT_ALL_ABSEN, MULTIPLE_RS_EXTRACTOR_ABSEN);
+    }
+
+    @Override
+    public List<DataSiswa> getByNoAbsen(String no_absen) {
+        return mJdbc.query(SQL_GET_BY_ABSEN, new Object[]{"%"+no_absen+"%"}, MULTIPLE_RS_EXTRACTOR_ABSEN);
+    }
+
+    @Override
+    public List<DataSiswa> getByJoin(String no_absen, String aUserId) {
+        return mJdbc.query(SQL_GET_BY_JOIN, new Object[]{no_absen, aUserId}, MULTIPLE_RS_EXTRACTOR_ABSEN);
     }
 }

@@ -28,10 +28,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @RestController
 public class BotController {
@@ -45,6 +42,9 @@ public class BotController {
 
     @Autowired
     private BotTemplate botTemplate;
+
+    @Autowired
+    private DBService dbService;
 
     private UserProfileResponse sender = null;
 
@@ -144,21 +144,61 @@ public class BotController {
 
     private void handleRegisteringUser(String replyToken, String[] words)
     {
+        String registerMessage = null;
+        String target=words.length > 1 ? words[1] : "";
+
+        if (target.length()<=3){
+            registerMessage = "Butuh lebih dari 3 karakter untuk mencari user";
+        } else {
+            String lineId = target.substring(target.indexOf("@") + 1);
+            if(sender != null) {
+                if (!sender.getDisplayName().isEmpty() && (lineId.length() > 0)) {
+                    if (dbService.regLineID(sender.getUserId(), lineId, sender.getDisplayName()) != 0) {
+                        ShowAbsensi(replyToken, "Pendaftaran user berhasil. Berikut daftar event yang bisa kamu ikuti:");
+                    } else {
+                        userNotFoundFallback(replyToken, "Gagal melakukan pendaftaran user! Ikuti petunjuk berikut ini:");
+                    }
+                } else {
+                    userNotFoundFallback(replyToken, "User tidak terdeteksi. Tambahkan dulu bot AbsenKoey sebagai teman!");
+                }
+            } else {
+                userNotFoundFallback(replyToken, "Hi, tambahkan dulu bot AbsenKoye sebagai teman!");
+            }
+        }
+    }
+
+    private void ShowAbsensi(String replyToken) {
+        ShowAbsensi(replyToken, null);
+    }
+
+    private void ShowAbsensi(String replyToken, String additionalInfo)
+    {
+        String userFound = dbService.findUser(sender.getUserId());
+
+        if (userFound == null)
+        {
+            userNotFoundFallback(replyToken);
+        }
+
 
     }
 
-    private void broadcastNewFriendJoined(String eventId, String newFriendId) {
-        List<String> listIds;
-        List<DaftarAbsen> jointEvents = DBService;
-
-        listIds = jointEvents.stream()
-                .filter(jointEvent -> !jointEvent.user_id.equals(newFriendId))
-                .map((jointEvent) -> jointEvent.user_id)
-                .collect(Collectors.toList());
-
-        Set<String> stringSet = new HashSet<>(listIds);
-        String msg = "Hi, ada teman baru telah bergabung di event " + eventId;
-        TemplateMessage buttonsTemplate = botTemplate.createButton(msg, "Lihat Teman", "teman #" + eventId);
-        botService.multicast(stringSet, buttonsTemplate);
+    private void userNotFoundFallback(String replyToken)
+    {
+        userNotFoundFallback(replyToken, null);
     }
+
+    private void userNotFoundFallback(String replyToken, String additionalInfo)
+    {
+        List<String> messages = new ArrayList<>();
+
+        if(additionalInfo != null) messages.add(additionalInfo);
+        messages.add("Nama kamu belum terdaftar di database, daftarkan LINE ID kamu (pake \'id @\' ya)");
+        messages.add("Contoh: id @user");
+
+        botService.replyText(replyToken, messages.toArray(new String[messages.size()]));
+        return;
+    }
+
+
 }

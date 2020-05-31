@@ -9,6 +9,8 @@ import com.linecorp.bot.model.event.MessageEvent;
 import com.linecorp.bot.model.event.ReplyEvent;
 import com.linecorp.bot.model.event.message.MessageContent;
 import com.linecorp.bot.model.event.message.TextMessageContent;
+import com.linecorp.bot.model.event.source.GroupSource;
+import com.linecorp.bot.model.event.source.RoomSource;
 import com.linecorp.bot.model.event.source.Source;
 import com.linecorp.bot.model.event.source.UserSource;
 import com.linecorp.bot.model.message.Message;
@@ -122,10 +124,22 @@ public class BotController {
         sender                 = botService.getProfile(senderId);
 
         if(content instanceof TextMessageContent) {                                                     // jika pesan berupa teks
-            //handleTextMessage(replyToken, (TextMessageContent) content, source);                      // ladeni dengan teks
-            greetingMessage(replyToken, source, null);
+            handleTextMessage(replyToken, (TextMessageContent) content, source);                      // ladeni dengan teks
         } else {                                                                                        // tidak dikenal?
             greetingMessage(replyToken, source, null);                                    // pesan pembuka
+        }
+    }
+
+    private void handleTextMessage(String replyToken, TextMessageContent content, Source source)
+    {
+        if (source instanceof GroupSource) {
+            //handleGroupChats(replyToken, content.getText(), ((GroupSource) source).getGroupId());
+        } else if (source instanceof RoomSource) {
+            // handleRoomChats(replyToken, content.getText(), ((RoomSource) source).getRoomId());
+        } else if(source instanceof UserSource) {
+            handleOneOnOneChats(replyToken, content.getText());
+        } else {
+            botService.replyText(replyToken,"Unknown Message Source!");
         }
     }
 

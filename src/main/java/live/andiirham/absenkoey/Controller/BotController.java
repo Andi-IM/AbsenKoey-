@@ -2,6 +2,7 @@ package live.andiirham.absenkoey.Controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.linecorp.bot.client.LineSignatureValidator;
+import com.linecorp.bot.model.PushMessage;
 import com.linecorp.bot.model.event.FollowEvent;
 import com.linecorp.bot.model.event.JoinEvent;
 import com.linecorp.bot.model.event.MessageEvent;
@@ -15,7 +16,6 @@ import com.linecorp.bot.model.message.TemplateMessage;
 import com.linecorp.bot.model.message.TextMessage;
 import com.linecorp.bot.model.objectmapper.ModelObjectMapper;
 import com.linecorp.bot.model.profile.UserProfileResponse;
-import live.andiirham.absenkoey.Model.DaftarAbsen;
 import live.andiirham.absenkoey.Model.LineEventsModel;
 import live.andiirham.absenkoey.Service.BotService;
 import live.andiirham.absenkoey.Service.BotTemplate;
@@ -59,7 +59,7 @@ public class BotController {
             //    throw new RuntimeException("Invalid Signature Validation");
             //}
 
-            System.out.println(eventsPayload);                                                           // menampilkan payload
+            System.err.println(eventsPayload);                                                           // menampilkan payload
             ObjectMapper objectMapper = ModelObjectMapper.createNewObjectMapper();                       // inisiasi object Mapper
             LineEventsModel eventsModel = objectMapper.readValue(eventsPayload, LineEventsModel.class);  // inisiasi eventModel
 
@@ -78,6 +78,18 @@ public class BotController {
         } catch (IOException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
+    }
+
+    @RequestMapping(value="/pushmessage/{id}/{message}", method=RequestMethod.GET)
+    public ResponseEntity<String> pushmessage(
+            @PathVariable("id") String userId,
+            @PathVariable("message") String textMsg
+    ){
+        TextMessage textMessage = new TextMessage(textMsg);
+        PushMessage pushMessage = new PushMessage(userId, textMessage);
+        botService.push(pushMessage);
+
+        return new ResponseEntity<String>("Push message:"+textMsg+"\nsent to: "+userId, HttpStatus.OK);
     }
 
     private void handleJointOrFollowEvent(String replyToken, Source source) {                            // jika bot join atau follow user

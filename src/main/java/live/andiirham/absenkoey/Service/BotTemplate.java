@@ -1,6 +1,5 @@
 package live.andiirham.absenkoey.Service;
 
-import com.linecorp.bot.model.PushMessage;
 import com.linecorp.bot.model.action.MessageAction;
 import com.linecorp.bot.model.event.source.Source;
 import com.linecorp.bot.model.event.source.UserSource;
@@ -28,7 +27,7 @@ public class BotTemplate
 
     public TemplateMessage greetingMessage(Source source, UserProfileResponse sender)
     {
-        String message = "Hi %s!";
+        String message = "Hi %s! terimakasih telah mengundang bot AbsenKoey!";
         String action = "reg";
 
         if (source instanceof UserSource){

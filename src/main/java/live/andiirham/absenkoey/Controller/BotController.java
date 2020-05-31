@@ -80,7 +80,7 @@ public class BotController {
         }
     }
 
-    @RequestMapping(value="/pushmessage/{id}/{message}", method=RequestMethod.GET)
+    /*@RequestMapping(value="/pushmessage/{id}/{message}", method=RequestMethod.GET)
     public ResponseEntity<String> pushmessage(
             @PathVariable("id") String userId,
             @PathVariable("message") String textMsg
@@ -90,7 +90,7 @@ public class BotController {
         botService.push(pushMessage);
 
         return new ResponseEntity<String>("Push message:"+textMsg+"\nsent to: "+userId, HttpStatus.OK);
-    }
+    }*/
 
     private void handleJointOrFollowEvent(String replyToken, Source source) {                            // jika bot join atau follow user
         greetingMessage(replyToken, source, null);                                        // tampilkan pesan pembuka

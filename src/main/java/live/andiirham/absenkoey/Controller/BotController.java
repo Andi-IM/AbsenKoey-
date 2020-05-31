@@ -18,10 +18,12 @@ import com.linecorp.bot.model.message.TemplateMessage;
 import com.linecorp.bot.model.message.TextMessage;
 import com.linecorp.bot.model.objectmapper.ModelObjectMapper;
 import com.linecorp.bot.model.profile.UserProfileResponse;
+import live.andiirham.absenkoey.Model.DataSiswa;
 import live.andiirham.absenkoey.Model.LineEventsModel;
 import live.andiirham.absenkoey.Service.BotService;
 import live.andiirham.absenkoey.Service.BotTemplate;
 import live.andiirham.absenkoey.Service.DBService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -30,7 +32,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 public class BotController {
@@ -165,7 +170,84 @@ public class BotController {
 
         if(intent.equalsIgnoreCase("id")) {
             handleRegisteringUser(replyToken, words);
+        } else if (intent.equalsIgnoreCase("daftar")) {
+            handleJoinAbsen(replyToken, words);
+        } else if (intent.equalsIgnoreCase("teman")) {
+            handleShowFriend(replyToken, words);
         }
+    }
+
+    private void handleShowFriend(String replyToken, String[] words) {
+        String target       = StringUtils.join(words, " ");
+        String no_absen     = target.substring(target.indexOf("#") + 1).trim();
+
+        List<DataSiswa> daftarAbsens = dbService.getJoinedAbsen(no_absen);
+
+        if (daftarAbsens.size() > 0) {
+            List<String> friendList = daftarAbsens.stream()
+                    .map((siswa) ->
+                            String.format(
+                            "Display Name: %s\nLINE ID: %s\n",
+                            siswa.nama
+                    ))
+                    .collect(Collectors.toList());
+
+            String replyText  = "Teman dengan no #" + no_absen + ":\n\n";
+            replyText += StringUtils.join(friendList, "\n\n");
+
+            botService.replyText(replyToken, replyText);
+        } else {
+            botService.replyText(replyToken, "Absen tidak terdaftar!");
+        }
+    }
+
+    private void handleJoinAbsen(String replyToken, String[] words) {
+        String target       = words.length > 2 ? words[2] : "";
+        String no_absen     = target.substring(target.indexOf("#") + 1);
+        String nama         = target.substring(target.indexOf("?") + 1);
+        String noBP         = target.substring(target.indexOf("="));
+        String senderId     = sender.getUserId();
+        String senderName   = sender.getDisplayName();
+
+        int joinStatus = dbService.insertAbsen(no_absen, nama, noBP, senderName);
+
+        if (joinStatus == -1) {
+            TemplateMessage buttonsTemplate = botTemplate.createButton(
+                    "Nama kamu sudah ada di dalam database!",
+                    "Lihat Teman",
+                    "teman #" + no_absen
+            );
+            botService.push(replyToken, buttonsTemplate);
+            return;
+        }
+
+        if (joinStatus == 1) {
+            TemplateMessage buttonsTemplate = botTemplate.createButton(
+                    "Database diupdate! lihat daftar",
+                    "Lihat Teman",
+                    "teman #" + no_absen
+            );
+            botService.push(replyToken, buttonsTemplate);
+            broadcastNewFriendJoined(no_absen, senderId);
+            return;
+        }
+
+        botService.replyText(replyToken, "yah, kamu gagal bergabung event :(");
+    }
+
+    private void broadcastNewFriendJoined(String no_absen, String newFriendId){
+        List<String> listIds;
+        List<DataSiswa> jointEvents = dbService.getJoinedAbsen(no_absen);
+
+        listIds = jointEvents.stream()
+                .filter(jointEvent -> !jointEvent.user_id.equals(newFriendId))
+                .map((jointEvent) -> jointEvent.user_id)
+                .collect(Collectors.toList());
+
+        Set<String> stringSet = new HashSet<>(listIds);
+        String msg = "Hi temanmu terdaftar dengan no_absen " + no_absen;
+        TemplateMessage buttonsTemplate = botTemplate.createButton(msg, "Lihat Teman", "teman #" + no_absen);
+        botService.multicast(stringSet, buttonsTemplate);
     }
 
     private void handleRegisteringUser(String replyToken, String[] words)

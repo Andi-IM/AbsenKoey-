@@ -29,6 +29,12 @@ public class BotService {
         {throw new RuntimeException(e);}
     }
 
+    public void push(String replyToken, Message message)
+    {
+        PushMessage pushMessage = new PushMessage(replyToken, message);
+        push(pushMessage);
+    }
+
     public void multicast(Set<String> to, Message message)
     {
         try {

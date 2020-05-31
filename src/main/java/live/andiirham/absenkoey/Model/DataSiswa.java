@@ -6,6 +6,7 @@ public class DataSiswa {
     public String nama;
     public String no_bp;
     public String jam;
+    public String user_id;
 
     public DataSiswa() { }
 

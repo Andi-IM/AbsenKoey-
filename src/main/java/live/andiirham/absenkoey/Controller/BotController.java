@@ -13,17 +13,13 @@ import com.linecorp.bot.model.event.source.GroupSource;
 import com.linecorp.bot.model.event.source.RoomSource;
 import com.linecorp.bot.model.event.source.Source;
 import com.linecorp.bot.model.event.source.UserSource;
-import com.linecorp.bot.model.message.Message;
-import com.linecorp.bot.model.message.TemplateMessage;
 import com.linecorp.bot.model.message.TextMessage;
 import com.linecorp.bot.model.objectmapper.ModelObjectMapper;
 import com.linecorp.bot.model.profile.UserProfileResponse;
-import live.andiirham.absenkoey.Model.DataSiswa;
 import live.andiirham.absenkoey.Model.LineEventsModel;
 import live.andiirham.absenkoey.Service.BotService;
 import live.andiirham.absenkoey.Service.BotTemplate;
 import live.andiirham.absenkoey.Service.DBService;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -32,10 +28,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @RestController
 public class BotController {
@@ -192,10 +185,17 @@ public class BotController {
     private void handleOneOnOneChats(String replyToken, String textMessage)                               // peladen One - One chat
     {
         String msgText = textMessage.toLowerCase();
-        if (msgText.contains("!Start"))                                                                   // jika pesan mengandung keyword !Start
+        if (msgText.contains("id")
+                || msgText.contains("find")
+                || msgText.contains("join")
+                || msgText.contains("teman")
+        )                                                                   // jika pesan mengandung keyword !Start
         {
             processText(replyToken, msgText);
         }   // tambahkan pesan disini
+        else if (msgText.contains("start bot")){
+            gettingStarted();
+        }
         else {
             handleFallbackMessage(replyToken, new UserSource(sender.getUserId()));                        // panggil fallback
         }
@@ -206,9 +206,7 @@ public class BotController {
         String[] words = messageText.trim().split("\\s+");
         String intent  = words[0];
 
-        if(intent.equalsIgnoreCase("start")) {
-            gettingStarted(replyToken, words);
-        } else if(intent.equalsIgnoreCase("id")) {
+        if(intent.equalsIgnoreCase("id")) {
             handleRegisteringUser(replyToken, words);
         } else if (intent.equalsIgnoreCase("daftar")) {
             //handleJoinAbsen(replyToken, words);
@@ -217,12 +215,12 @@ public class BotController {
         }
     }
 
-    private void gettingStarted(String replyToken, String[] words) {
+    private void gettingStarted() {
         String message = "Daftar Perintah yang dapat kamu gunakan : " +
                 "\n !daftar : untuk memasukkan daftar absen ke database" +
                 "\n !absen : untuk memulai absen" +
                 "\n !about : tentang";
-        botService.pushText(replyToken, message);
+        pushmessage(sender.getUserId(), message);
     }
 
     // handling programs

@@ -313,7 +313,7 @@ public class BotController {
     // core programs
     private void handleShowFriend(String replyToken, String[] words)
     {
-        String target       = StringUtils.join(words, " ");
+     /*   String target       = StringUtils.join(words, " ");
         String no_absen     = target.substring(target.indexOf("#") + 1).trim();
 
         List<DataSiswa> daftarAbsens = dbService.getJoinedAbsen(no_absen);
@@ -333,11 +333,11 @@ public class BotController {
             botService.replyText(replyToken, replyText);
         } else {
             botService.replyText(replyToken, "Absen tidak terdaftar!");
-        }
+        }*/
     }
     private void handleJoinAbsen(String replyToken, String[] words)
     {
-        String target       = words.length > 2 ? words[2] : "";
+        /*String target       = words.length > 2 ? words[2] : "";
         String no_absen     = target.substring(target.indexOf("#") + 1);
         String nama         = target.substring(target.indexOf("?") + 1);
         String noBP         = target.substring(target.indexOf("="));
@@ -367,11 +367,11 @@ public class BotController {
             return;
         }
 
-        botService.replyText(replyToken, "yah, kamu gagal bergabung event :(");
+        botService.replyText(replyToken, "yah, kamu gagal bergabung event :(");*/
     }
     private void broadcastNewFriendRegistered(String no_absen)
     {
-        List<String> listIds;
+        /*List<String> listIds;
         List<DataSiswa> getAbsen = dbService.getAbsen(no_absen);
 
         listIds = getAbsen.stream()
@@ -384,7 +384,7 @@ public class BotController {
         Set<String> stringSet = new HashSet<>(listIds);
         String msg = "Hi temanmu terdaftar dengan no_absen " + no_absen;
         TemplateMessage buttonsTemplate = botTemplate.createButton(msg, "Lihat Teman", "teman #" + no_absen);
-        botService.multicast(stringSet, buttonsTemplate);
+        botService.multicast(stringSet, buttonsTemplate);*/
     }
     private void ShowAbsensi(String replyToken) {
         ShowAbsensi(replyToken, null);

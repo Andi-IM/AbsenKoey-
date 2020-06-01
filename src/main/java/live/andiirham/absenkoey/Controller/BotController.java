@@ -211,9 +211,9 @@ public class BotController {
         } else if(intent.equalsIgnoreCase("id")) {
             handleRegisteringUser(replyToken, words);
         } else if (intent.equalsIgnoreCase("daftar")) {
-            handleJoinAbsen(replyToken, words);
+            //handleJoinAbsen(replyToken, words);
         } else if (intent.equalsIgnoreCase("teman")) {
-            handleShowFriend(replyToken, words);
+            //handleShowFriend(replyToken, words);
         }
     }
 
@@ -255,16 +255,27 @@ public class BotController {
     // mendaftarkan absen
     private void handleRegisterAbsen(String replyToken, String[] words)
     {
-        String registerMessage = null;
-        String no_absen = null, nama = null, no_bp  = null;
-        botService.pushText(replyToken, "Masukkan nama Anda : ");
-        no_absen = 
+        String target = words.length > 2 ? words[2] : "";
+        String no_absen = target.substring(target.indexOf("_") + 1);
+        String nama = target.substring(target.indexOf("__") + 1);
+        String nobp = target.substring(target.indexOf("___") + 1);
 
-        dbService.insertAbsen(no_absen,nama,no_bp);
+        int AbsenStatus = dbService.insertAbsen(no_absen, nama, nobp);
 
+        if (AbsenStatus == -1) {
+            String Message = "Kamu telah terdaftar dalam absen";
+            botService.replyText(replyToken, Message);
+            return;
+        }
+
+        if (AbsenStatus == 1) {
+            String Message = "Pendaftaran berhasil! berikut daftar absensi ";
+            botService.replyText(replyToken, Message);
+            //broadcastNewFriendRegistered(no_absen);
+        }
     }
 
-    private void handleShowFriend(String replyToken, String[] words) {
+    /*private void handleShowFriend(String replyToken, String[] words) {
         String target       = StringUtils.join(words, " ");
         String no_absen     = target.substring(target.indexOf("#") + 1).trim();
 
@@ -287,8 +298,8 @@ public class BotController {
             botService.replyText(replyToken, "Absen tidak terdaftar!");
         }
     }
-
-    private void handleJoinAbsen(String replyToken, String[] words) {
+*/
+   /* private void handleJoinAbsen(String replyToken, String[] words) {
         String target       = words.length > 2 ? words[2] : "";
         String no_absen     = target.substring(target.indexOf("#") + 1);
         String nama         = target.substring(target.indexOf("?") + 1);
@@ -321,14 +332,16 @@ public class BotController {
 
         botService.replyText(replyToken, "yah, kamu gagal bergabung event :(");
     }
-
-    private void broadcastNewFriendJoined(String no_absen, String newFriendId){
+*/
+  /*  private void broadcastNewFriendRegistered(String no_absen){
         List<String> listIds;
-        List<DataSiswa> jointEvents = dbService.getJoinedAbsen(no_absen);
+        List<DataSiswa> getAbsen = dbService.getAbsen(no_absen);
 
-        listIds = jointEvents.stream()
-                .filter(jointEvent -> !jointEvent.user_id.equals(newFriendId))
-                .map((jointEvent) -> jointEvent.user_id)
+        listIds = getAbsen.stream()
+                .filter(
+                        jointEvent   -> !jointEvent.user_id.equals(newFriendId))
+                .map(
+                        (jointEvent) -> jointEvent.user_id)
                 .collect(Collectors.toList());
 
         Set<String> stringSet = new HashSet<>(listIds);
@@ -336,7 +349,7 @@ public class BotController {
         TemplateMessage buttonsTemplate = botTemplate.createButton(msg, "Lihat Teman", "teman #" + no_absen);
         botService.multicast(stringSet, buttonsTemplate);
     }
-
+*/
     private void ShowAbsensi(String replyToken) {
         ShowAbsensi(replyToken, null);
     }

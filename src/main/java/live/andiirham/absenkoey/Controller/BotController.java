@@ -13,6 +13,7 @@ import com.linecorp.bot.model.event.source.GroupSource;
 import com.linecorp.bot.model.event.source.RoomSource;
 import com.linecorp.bot.model.event.source.Source;
 import com.linecorp.bot.model.event.source.UserSource;
+import com.linecorp.bot.model.message.Message;
 import com.linecorp.bot.model.message.TextMessage;
 import com.linecorp.bot.model.objectmapper.ModelObjectMapper;
 import com.linecorp.bot.model.profile.UserProfileResponse;
@@ -35,6 +36,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 public class BotController {
@@ -108,16 +110,16 @@ public class BotController {
             sender          = botService.getProfile(senderId);                                          // masukkan id sender ke database
         }
 
-        String greetingMessage = botTemplate.greetingMessage(source, sender);                  // bentuk template greeting yang ada di service template
+        String greetingMessage = botTemplate.greetingMessage(source, sender);                           // bentuk template greeting yang ada di service template
 
-//        if (additionalMessage != null) {                                                                // jika pesan tambahan masih ada
-//            List<Message> messages = new ArrayList<>();                                                 // buat List
-//            messages.add(new TextMessage(additionalMessage));                                           // tambahkan tambahan pesan
-//            messages.add(greetingMessage);                                                              // masukkan ke dalam {pesan pembuka}
-//            botService.reply(replyToken, messages);                                                     // balas ke sender
-//        } else {                                                                                        // jika pesan tambahan tidak ada
-        botService.replyText(replyToken, greetingMessage);                                            // langsung balas ke sender
-//        }
+        if (additionalMessage != null) {                                                                // jika pesan tambahan masih ada
+            List<Message> messages = new ArrayList<>();                                                 // buat List
+            messages.add(new TextMessage(additionalMessage));                                           // tambahkan tambahan pesan
+         // messages.add(greetingMessage);                                                              // masukkan ke dalam {pesan pembuka}
+            botService.reply(replyToken, messages);                                                     // balas ke sender
+        } else {                                                                                        // jika pesan tambahan tidak ada
+        botService.replyText(replyToken, greetingMessage);                                              // langsung balas ke sender
+        }
     }
 
     // handlling join
@@ -160,14 +162,20 @@ public class BotController {
         String msgText = textMessage.toLowerCase();
         if (msgText.contains("bot leave")) {
             if (sender == null) {
-                botService.replyText(replyToken, "Hi, tambahkan dulu bot Dicoding Event sebagai teman!");
+                botService.replyText(replyToken, "Hi, tambahkan dulu bot AbsenKoey! sebagai teman!");
             } else {
                 botService.leaveRoom(roomId);
             }
-        } else if (msgText.contains("id") // tambahkan untuk pesan proses tambahan
+        } else if (msgText.contains("id") // tambahkan untuk pesan proses regex tambahan
         ) {
             processText(replyToken, msgText);
-        }   // tambahkan pesan disini
+        }   // tambahkan pesan perintah disini
+        else if(msgText.contains("start bot")){
+            gettingStarted();
+        }
+        else if (msgText.contains("ambil absen")){
+            ambilAbsen(replyToken);
+        }
         else {
             handleFallbackMessage(replyToken, new RoomSource(roomId, sender.getUserId()));
         }
@@ -182,12 +190,16 @@ public class BotController {
             } else {
                 botService.leaveGroup(groupId);
             }
-        } else if (msgText.contains("id") // tambahkan untuk pesan proses tambahan
+        } else if (msgText.contains("id") // tambahkan untuk pesan proses regex tambahan
+                    || msgText.contains("daftar")
+                    || msgText.contains("list absen")
         ) {
             processText(replyToken, textMessage);
-        }   // tambahkan pesan disini
+        }   // tambahkan pesan perintah disini
         else if(msgText.contains("start bot")){
             gettingStarted();
+        } else if (msgText.contains("ambil absen")){
+            ambilAbsen(replyToken);
         }
         else {
             handleFallbackMessage(replyToken, new GroupSource(groupId, sender.getUserId()));
@@ -208,9 +220,17 @@ public class BotController {
         else if (msgText.contains("start bot")){
             gettingStarted();
         }
+        else if (msgText.contains("ambil absen")){
+            handleFallbackAbsen(replyToken);
+        }
         else {
             handleFallbackMessage(replyToken, new UserSource(sender.getUserId()));                        // panggil fallback
         }
+    }
+
+    private void handleFallbackAbsen(String replyToken) {
+        String message = "Kamu tidak dapat mengambil absen disini!";
+        botService.replyText(replyToken, message);
     }
 
     // text proccessing
@@ -221,9 +241,9 @@ public class BotController {
         if(intent.equalsIgnoreCase("id")) {
             handleRegisteringUser(replyToken, words);
         } else if (intent.equalsIgnoreCase("daftar")) {
-            //handleJoinAbsen(replyToken, words);
-        } else if (intent.equalsIgnoreCase("teman")) {
-            //handleShowFriend(replyToken, words);
+            handleRegisterAbsen(replyToken, words);
+        } else if (intent.equalsIgnoreCase("list absen")) {
+            handleShowAbsen(replyToken, words);
         }
     }
 
@@ -286,9 +306,8 @@ public class BotController {
         }
     }
     // input absen
-    private void ambilAbsen(String replyToken, String[] words)
+    private void ambilAbsen(String replyToken)
     {
-        String target = words.length > 2 ? words[2] : "";
         String user_id = sender.getUserId();
         DataSiswa ds = (DataSiswa) dbService.getAbsenByUserId(user_id);
         String tanggal = dateFormat.format(date);
@@ -311,29 +330,28 @@ public class BotController {
     }
 
     // core programs
-    private void handleShowFriend(String replyToken, String[] words)
+    private void handleShowAbsen(String replyToken, String[] words)
     {
-     /*   String target       = StringUtils.join(words, " ");
+        String target       = StringUtils.join(words, " ");
         String no_absen     = target.substring(target.indexOf("#") + 1).trim();
 
-        List<DataSiswa> daftarAbsens = dbService.getJoinedAbsen(no_absen);
+        List<DataSiswa> datasiswa = dbService.getAbsen(no_absen);
 
-        if (daftarAbsens.size() > 0) {
-            List<String> friendList = daftarAbsens.stream()
+        if (datasiswa.size() > 0) {
+            List<String> listAbsen = datasiswa.stream()
                     .map((siswa) ->
                             String.format(
-                            "Display Name: %s\nLINE ID: %s\n",
-                            siswa.nama
+                            "%s. %s (%s)",
+                            siswa.no_abs, siswa.nama, siswa.no_bp
                     ))
                     .collect(Collectors.toList());
 
-            String replyText  = "Teman dengan no #" + no_absen + ":\n\n";
-            replyText += StringUtils.join(friendList, "\n\n");
-
+            String replyText  = "Database absen :\n\n";
+            replyText += StringUtils.join(listAbsen, "\n");
             botService.replyText(replyToken, replyText);
         } else {
             botService.replyText(replyToken, "Absen tidak terdaftar!");
-        }*/
+        }
     }
     private void handleJoinAbsen(String replyToken, String[] words)
     {
@@ -371,7 +389,7 @@ public class BotController {
     }
     private void broadcastNewFriendRegistered(String no_absen)
     {
-        /*List<String> listIds;
+      /*  List<String> listIds;
         List<DataSiswa> getAbsen = dbService.getAbsen(no_absen);
 
         listIds = getAbsen.stream()

@@ -14,7 +14,7 @@ import java.util.Collections;
 @Service
 public class BotTemplate
 {
-    public TemplateMessage createButton(String message, String actionTitle, String actionText) {
+    /*public TemplateMessage createButton(String message, String actionTitle, String actionText) {
         ButtonsTemplate buttonsTemplate = new ButtonsTemplate(
                 null,
                 null,
@@ -23,18 +23,17 @@ public class BotTemplate
         );
 
         return new TemplateMessage(actionTitle, buttonsTemplate);
-    }
+    }*/
 
-    public TemplateMessage greetingMessage(Source source, UserProfileResponse sender)
+    public String greetingMessage(Source source, UserProfileResponse sender)
     {
-        String message = "Hi %s! terimakasih telah mengundang bot AbsenKoey!";
-        String action = "reg";
+        String message = "Hi %s! terimakasih telah mengundang bot AbsenKoey! \n ketik \"Start\" untuk memulai.";
 
         if (source instanceof UserSource){
             message = String.format(message, sender.getDisplayName());
         } else {
             message = "Unknown Message Source!";
         }
-        return createButton(message, action, action);
+        return message;
     }
 }

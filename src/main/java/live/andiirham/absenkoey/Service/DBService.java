@@ -38,9 +38,9 @@ public class DBService {
     }
 
     //method untuk mendaftarkan absen
-    public int insertAbsen(String no_absen, String nama, String noBP){
+    public int insertAbsen(String no_absen, String nama, String noBP, String user_id){
         if(isUserRegistered(no_absen) == null) {
-            return mDao.daftarAbsen(no_absen,nama, noBP);
+            return mDao.daftarAbsen(no_absen,nama, noBP, user_id);
         }
         return -1;
     }
@@ -62,9 +62,14 @@ public class DBService {
         return mDao.getByNoAbsen(no_absen);
     }
 
+    public List<DataSiswa> getAbsenByUserId(String user_id)
+    {
+        return mDao.getAbsenByUserId(user_id);
+    }
+
     // method untuk mengambil absen
     public int ambilAbsen(String user_id, String no_absen, String nama, String no_bp, String tanggal){
-        DaftarAbsensi daftarAbsen =isAbsent(tanggal, user_id);
+        DaftarAbsensi daftarAbsen = isAbsent(tanggal, user_id);
 
         if(daftarAbsen == null){
             return mDao.ambilAbsen(user_id, no_absen, nama, no_bp);

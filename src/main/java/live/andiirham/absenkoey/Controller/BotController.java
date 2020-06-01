@@ -206,7 +206,7 @@ public class BotController {
         String[] words = messageText.trim().split("\\s+");
         String intent  = words[0];
 
-        if(intent.equalsIgnoreCase("!start")) {
+        if(intent.equalsIgnoreCase("start")) {
             gettingStarted(replyToken, words);
         } else if(intent.equalsIgnoreCase("id")) {
             handleRegisteringUser(replyToken, words);

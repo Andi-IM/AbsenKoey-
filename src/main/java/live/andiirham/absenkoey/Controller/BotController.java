@@ -173,6 +173,9 @@ public class BotController {
         else if(msgText.contains("start bot")){
             gettingStarted();
         }
+        else if (msgText.contains("ambil absen")){
+            ambilAbsen(replyToken);
+        }
         else {
             handleFallbackMessage(replyToken, new RoomSource(roomId, sender.getUserId()));
         }
@@ -188,11 +191,15 @@ public class BotController {
                 botService.leaveGroup(groupId);
             }
         } else if (msgText.contains("id") // tambahkan untuk pesan proses regex tambahan
+                    || msgText.contains("daftar")
+                    || msgText.contains("list absen")
         ) {
             processText(replyToken, textMessage);
         }   // tambahkan pesan perintah disini
         else if(msgText.contains("start bot")){
             gettingStarted();
+        } else if (msgText.contains("ambil absen")){
+            ambilAbsen(replyToken);
         }
         else {
             handleFallbackMessage(replyToken, new GroupSource(groupId, sender.getUserId()));
@@ -213,9 +220,17 @@ public class BotController {
         else if (msgText.contains("start bot")){
             gettingStarted();
         }
+        else if (msgText.contains("ambil absen")){
+            handleFallbackAbsen(replyToken);
+        }
         else {
             handleFallbackMessage(replyToken, new UserSource(sender.getUserId()));                        // panggil fallback
         }
+    }
+
+    private void handleFallbackAbsen(String replyToken) {
+        String message = "Kamu tidak dapat mengambil absen disini!";
+        botService.replyText(replyToken, message);
     }
 
     // text proccessing
@@ -226,9 +241,9 @@ public class BotController {
         if(intent.equalsIgnoreCase("id")) {
             handleRegisteringUser(replyToken, words);
         } else if (intent.equalsIgnoreCase("daftar")) {
-            //handleJoinAbsen(replyToken, words);
-        } else if (intent.equalsIgnoreCase("teman")) {
-            //handleShowFriend(replyToken, words);
+            handleRegisterAbsen(replyToken, words);
+        } else if (intent.equalsIgnoreCase("list absen")) {
+            handleShowAbsen(replyToken, words);
         }
     }
 
@@ -291,9 +306,8 @@ public class BotController {
         }
     }
     // input absen
-    private void ambilAbsen(String replyToken, String[] words)
+    private void ambilAbsen(String replyToken)
     {
-        String target = words.length > 2 ? words[2] : "";
         String user_id = sender.getUserId();
         DataSiswa ds = (DataSiswa) dbService.getAbsenByUserId(user_id);
         String tanggal = dateFormat.format(date);

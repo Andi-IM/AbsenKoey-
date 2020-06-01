@@ -14,7 +14,7 @@ import java.util.Collections;
 @Service
 public class BotTemplate
 {
-    /*public TemplateMessage createButton(String message, String actionTitle, String actionText) {
+    public TemplateMessage createButton(String message, String actionTitle, String actionText) {
         ButtonsTemplate buttonsTemplate = new ButtonsTemplate(
                 null,
                 null,
@@ -23,7 +23,7 @@ public class BotTemplate
         );
 
         return new TemplateMessage(actionTitle, buttonsTemplate);
-    }*/
+    }
 
     public String greetingMessage(Source source, UserProfileResponse sender)
     {

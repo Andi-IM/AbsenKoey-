@@ -1,25 +1,18 @@
 package live.andiirham.absenkoey.Dao;
 
+import live.andiirham.absenkoey.Model.DaftarAbsensi;
 import live.andiirham.absenkoey.Model.DataSiswa;
 import live.andiirham.absenkoey.Model.User;
-import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.ResultSetExtractor;
+
 
 import javax.sql.DataSource;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
-import java.util.Vector;
+
+import static live.andiirham.absenkoey.Dao.RsExtractor.*;
 
 public class DaoImpl implements Dao
 {
-    // get time
-    Date date = new Date();
-    SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss");
-    String timestamp = formatter.format(date);
 
     // query untuk table user
     private final static String USER_TABLE="tbl_user";
@@ -29,100 +22,26 @@ public class DaoImpl implements Dao
     
     // query untuk table absen
     private final static String ABSEN_TABLE="tbl_absen";
-    private final static String SQL_SELECT_ALL_ABSEN="SELECT id, no_absen, nama, no_bp, jam FROM "+ABSEN_TABLE;
-    private final static String SQL_JOIN_EVENT="INSERT INTO"+ABSEN_TABLE+"(no_absen, nama, no_bp, jam) VALUES (?,?,?,?);";
-    private static final String SQL_GET_BY_ABSEN = SQL_SELECT_ALL_ABSEN + "WHERE LOWER (no_absen) LIKE LOWER(?);";
-    private final static String SQL_GET_BY_JOIN=SQL_SELECT_ALL_ABSEN + " WHERE no_absen = ? AND user_id = ?;";
+    private final static String SQL_SELECT_ALL_ABSEN="SELECT id, no_absen, nama, no_bp FROM "+ABSEN_TABLE;
+    private final static String SQL_INSERT_ABSEN="INSERT INTO "+ABSEN_TABLE+"(no_absen, nama, no_bp) VALUES (?,?,?);";
+    private static final String SQL_GET_BY_ABSEN = SQL_SELECT_ALL_ABSEN + "WHERE no_absen LIKE (?);";
+
+    // query untuk table absensi
+    private final static String ABSENSI_TABLE = "tbl_absensi";
+    private final static String SQL_SELECT_ALL_ABSENSI = "SELECT id, user_id, no_absen, nama, no_bp, tanggal, jam FROM "+ABSENSI_TABLE;
+    private final static String SQL_JOIN_ABSEN = "INSERT INTO "+ABSENSI_TABLE+" (user_id, no_absen, nama, no_bp) VALUES (?,?,?,?);";
+    private final static String SQL_GET_BY_DATE = SQL_SELECT_ALL_ABSENSI + "WHERE tanggal = (?) AND user_id = (?);";
+    private final static String SQL_GET_BY_JOINED_ABSEN = SQL_SELECT_ALL_ABSENSI + "WHERE user_id = ? AND no_absen = ?;";
 
     private JdbcTemplate mJdbc;
 
-    // mendapatkan resultset
-    private final static ResultSetExtractor<User> SINGLE_RS_EXTRACTOR = new ResultSetExtractor<User>()
-    {
-        @Override
-        public User extractData(ResultSet rs) throws SQLException, DataAccessException {
-            while (rs.next())
-            {
-                User user = new User(
-                        rs.getLong("id"),
-                        rs.getString("user_id"),
-                        rs.getString("line_id"),
-                        rs.getString("display_name")
-                        );
-                return user;
-            }
-            return null;
-        }
-    };
-
-    private final static ResultSetExtractor<List<User>> MULTIPLE_RS_EXTRACTOR = new ResultSetExtractor<List<User>>()
-    {
-        @Override
-        public List<User> extractData(ResultSet rs)
-                throws SQLException, DataAccessException
-        {
-            List<User> list = new Vector<>();
-            while(rs.next())
-            {
-                User p = new User(
-                        rs.getLong("id"),
-                        rs.getString("user_id"),
-                        rs.getString("line_id"),
-                        rs.getString("display_name")
-                );
-                list.add(p);
-            }
-            return null;
-        }
-    };
-
-    private final static ResultSetExtractor<DataSiswa> SINGLE_RS_EXTRACTOR_ABSEN= new ResultSetExtractor<DataSiswa>()
-    {
-        @Override
-        public DataSiswa extractData(ResultSet rs)
-                throws SQLException, DataAccessException
-        {
-            while (rs.next())
-            {
-                DataSiswa ds = new DataSiswa(
-                        rs.getLong("id"),
-                        rs.getString("no_absen"),
-                        rs.getString("nama"),
-                        rs.getString("no_bp"),
-                        rs.getString("jam")
-                );
-            }
-            return null;
-        }
-    };
-
-    private final static ResultSetExtractor<List<DataSiswa>> MULTIPLE_RS_EXTRACTOR_ABSEN = new ResultSetExtractor<List<DataSiswa>>()
-    {
-        @Override
-        public List<DataSiswa> extractData(ResultSet rs)
-                throws SQLException, DataAccessException
-        {
-            List<DataSiswa> list = new Vector<>();
-            while(rs.next())
-            {
-                DataSiswa ds = new DataSiswa(
-                        rs.getLong("id"),
-                        rs.getString("no_absen"),
-                        rs.getString("nama"),
-                        rs.getString("no_bp"),
-                        rs.getString("jam")
-                );
-                list.add(ds);
-            }
-            return null;
-        }
-    };
-
+    // constructor
     public DaoImpl(DataSource aDataSource)
     {
         mJdbc = new JdbcTemplate(aDataSource);
     }
 
+    // getting query
     @Override
     public List<User> get()
     {
@@ -130,8 +49,7 @@ public class DaoImpl implements Dao
     }
 
     @Override
-    public List<User> getByUserId(String aUserId)
-    {
+    public List<User> getByUserId(String aUserId) {
         return mJdbc.query(SQL_GET_BY_USER_ID,
                 new Object[]{"%"+aUserId+"%"},
                 MULTIPLE_RS_EXTRACTOR);
@@ -144,8 +62,13 @@ public class DaoImpl implements Dao
     }
 
     @Override
-    public int joinAbsen(String no_absen, String nama, String no_bp) {
-        return mJdbc.update(SQL_JOIN_EVENT, new Object[]{no_absen, nama, no_bp, timestamp});
+    public int daftarAbsen(String no_absen, String nama, String no_bp) {
+        return mJdbc.update(SQL_INSERT_ABSEN, new Object[]{no_absen, nama, no_bp});
+    }
+
+    @Override
+    public int ambilAbsen(String userid, String no_absen, String nama, String no_bp) {
+        return mJdbc.update(SQL_JOIN_ABSEN, new Object[]{userid, no_absen, nama, no_bp});
     }
 
     @Override
@@ -160,7 +83,15 @@ public class DaoImpl implements Dao
     }
 
     @Override
-    public List<DataSiswa> getByJoin(String no_absen, String aUserId) {
-        return mJdbc.query(SQL_GET_BY_JOIN, new Object[]{no_absen, aUserId}, MULTIPLE_RS_EXTRACTOR_ABSEN);
+    public List<DaftarAbsensi> getByJoinedAbsen(String no_absen, String aUserId) {
+        return mJdbc.query(SQL_GET_BY_JOINED_ABSEN, new Object[]{aUserId, no_absen}, MULTIPLE_RS_EXTRACTOR_ABSENSI);
+    }
+
+    @Override
+    public List<DaftarAbsensi> getAbsensi() {return mJdbc.query(SQL_SELECT_ALL_ABSENSI, MULTIPLE_RS_EXTRACTOR_ABSENSI);}
+
+    @Override
+    public List<DaftarAbsensi> getByTanggal(String tanggal, String userId) {
+        return mJdbc.query(SQL_GET_BY_DATE, new Object[]{tanggal, userId}, MULTIPLE_RS_EXTRACTOR_ABSENSI);
     }
 }

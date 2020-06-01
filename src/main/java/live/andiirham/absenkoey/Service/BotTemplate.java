@@ -1,6 +1,8 @@
 package live.andiirham.absenkoey.Service;
 
 import com.linecorp.bot.model.action.MessageAction;
+import com.linecorp.bot.model.event.source.GroupSource;
+import com.linecorp.bot.model.event.source.RoomSource;
 import com.linecorp.bot.model.event.source.Source;
 import com.linecorp.bot.model.event.source.UserSource;
 import com.linecorp.bot.model.message.TemplateMessage;
@@ -27,11 +29,18 @@ public class BotTemplate
 
     public String greetingMessage(Source source, UserProfileResponse sender)
     {
-        String message = "Hi %s! terimakasih telah mengundang bot AbsenKoey! \n ketik \"Start\" untuk memulai.";
+        String message = "Hi %s! terimakasih telah mengundang bot AbsenKoey! \n ketik \"!Start\" untuk memulai.";
 
-        if (source instanceof UserSource){
+        if (source instanceof GroupSource){
+            message = String.format(message, "Group");}
+        else
+            if (source instanceof RoomSource){
+            message = String.format(message, "Room");}
+        else
+            if (source instanceof UserSource){
             message = String.format(message, sender.getDisplayName());
-        } else {
+        }
+        else {
             message = "Unknown Message Source!";
         }
         return message;

@@ -55,6 +55,7 @@ public class BotController {
 
     private UserProfileResponse sender = null;
 
+    // webhook response
     @RequestMapping(value = "/webhook", method = RequestMethod.POST)
     public ResponseEntity<String> webhook
             (@RequestHeader("X-Line-Signature") String xLineSignature,
@@ -72,7 +73,6 @@ public class BotController {
 
             eventsModel.getEvents().forEach((event)->{                                                   // Mendapatkan event
                 // kode reply message disini
-
                 if (event instanceof JoinEvent || event instanceof FollowEvent) {                        // jika event didapat join
                     String replyToken = ((ReplyEvent) event).getReplyToken();                            // dapatkan token reply
                     handleJointOrFollowEvent(replyToken, event.getSource());                             // fungsikan ke join atau follow
@@ -87,6 +87,7 @@ public class BotController {
         }
     }
 
+    // push message response
     @RequestMapping(value="/pushmessage/{id}/{message}", method=RequestMethod.GET)
     public ResponseEntity<String> pushmessage(
             @PathVariable("id") String userId,
@@ -99,28 +100,31 @@ public class BotController {
         return new ResponseEntity<String>("Push message:"+textMsg+"\nsent to: "+userId, HttpStatus.OK);
     }
 
-    private void handleJointOrFollowEvent(String replyToken, Source source) {                            // jika bot join atau follow user
-        greetingMessage(replyToken, source, null);                                        // tampilkan pesan pembuka
-    }
-
+    // greeting message
     private void greetingMessage(String replyToken, Source source, String additionalMessage) {          // pesan pembuka
         if(sender == null) {                                                                            // jika sender tidak ada (dalam database)
             String senderId = source.getSenderId();                                                     // dapatkan id sender
             sender          = botService.getProfile(senderId);                                          // masukkan id sender ke database
         }
 
-        TemplateMessage greetingMessage = botTemplate.greetingMessage(source, sender);                  // bentuk template greeting yang ada di service template
+        String greetingMessage = botTemplate.greetingMessage(source, sender);                  // bentuk template greeting yang ada di service template
 
-        if (additionalMessage != null) {                                                                // jika pesan tambahan masih ada
-            List<Message> messages = new ArrayList<>();                                                 // buat List
-            messages.add(new TextMessage(additionalMessage));                                           // tambahkan tambahan pesan
-            messages.add(greetingMessage);                                                              // masukkan ke dalam {pesan pembuka}
-            botService.reply(replyToken, messages);                                                     // balas ke sender
-        } else {                                                                                        // jika pesan tambahan tidak ada
-            botService.reply(replyToken, greetingMessage);                                              // langsung balas ke sender
-        }
+//        if (additionalMessage != null) {                                                                // jika pesan tambahan masih ada
+//            List<Message> messages = new ArrayList<>();                                                 // buat List
+//            messages.add(new TextMessage(additionalMessage));                                           // tambahkan tambahan pesan
+//            messages.add(greetingMessage);                                                              // masukkan ke dalam {pesan pembuka}
+//            botService.reply(replyToken, messages);                                                     // balas ke sender
+//        } else {                                                                                        // jika pesan tambahan tidak ada
+        botService.replyText(replyToken, greetingMessage);                                            // langsung balas ke sender
+//        }
     }
 
+    // handlling join
+    private void handleJointOrFollowEvent(String replyToken, Source source) {                            // jika bot join atau follow user
+        greetingMessage(replyToken, source, null);                                        // tampilkan pesan pembuka
+    }
+
+    // handling message
     private void handleMessageEvent(MessageEvent event) {                                               // handle bentuk pesan
         String replyToken      = event.getReplyToken();
         MessageContent content = event.getMessage();
@@ -135,12 +139,12 @@ public class BotController {
         }
     }
 
-    private void handleTextMessage(String replyToken, TextMessageContent content, Source source)
+    private void handleTextMessage(String replyToken, TextMessageContent content, Source source)          // handle untuk pesan tipe text
     {
         if (source instanceof GroupSource) {
-            //handleGroupChats(replyToken, content.getText(), ((GroupSource) source).getGroupId());
+            handleGroupChats(replyToken, content.getText(), ((GroupSource) source).getGroupId());
         } else if (source instanceof RoomSource) {
-            // handleRoomChats(replyToken, content.getText(), ((RoomSource) source).getRoomId());
+            handleRoomChats(replyToken, content.getText(), ((RoomSource) source).getRoomId());
         } else if(source instanceof UserSource) {
             handleOneOnOneChats(replyToken, content.getText());
         } else {
@@ -148,33 +152,116 @@ public class BotController {
         }
     }
 
-    private void handleOneOnOneChats(String replyToken, String textMessage) {                           // peladen One - One chat
+    // handling chats
+    private void handleRoomChats(String replyToken, String textMessage, String roomId)                    // handle untuk RoomChat
+    {
         String msgText = textMessage.toLowerCase();
-        if (msgText.contains("id"))                                                                      // jika pesan mengandung keyword id
+        if (msgText.contains("bot leave")) {
+            if (sender == null) {
+                botService.replyText(replyToken, "Hi, tambahkan dulu bot Dicoding Event sebagai teman!");
+            } else {
+                botService.leaveRoom(roomId);
+            }
+        } else if (msgText.contains("id") // tambahkan untuk pesan proses tambahan
+        ) {
+            processText(replyToken, msgText);
+        }   // tambahkan pesan disini
+        else {
+            handleFallbackMessage(replyToken, new RoomSource(roomId, sender.getUserId()));
+        }
+    }
+
+    private void handleGroupChats(String replyToken, String textMessage, String groupId)                  // handle untuk GroupChat
+    {
+        String msgText = textMessage.toLowerCase();
+        if (msgText.contains("bot leave")) {
+            if (sender == null) {
+                botService.replyText(replyToken, "Hi, tambahkan dulu bot Dicoding Event sebagai teman!");
+            } else {
+                botService.leaveGroup(groupId);
+            }
+        } else if (msgText.contains("id") // tambahkan untuk pesan proses tambahan
+        ) {
+            processText(replyToken, textMessage);
+        }   // tambahkan pesan disini
+        else {
+            handleFallbackMessage(replyToken, new GroupSource(groupId, sender.getUserId()));
+        }
+    }
+
+    private void handleOneOnOneChats(String replyToken, String textMessage)                               // peladen One - One chat
+    {
+        String msgText = textMessage.toLowerCase();
+        if (msgText.contains("!Start"))                                                                   // jika pesan mengandung keyword !Start
         {
             processText(replyToken, msgText);
         }   // tambahkan pesan disini
         else {
-            handleFallbackMessage(replyToken, new UserSource(sender.getUserId()));                      // panggil fallback
+            handleFallbackMessage(replyToken, new UserSource(sender.getUserId()));                        // panggil fallback
         }
     }
 
-    private void handleFallbackMessage(String replyToken, Source source) {                              // pesan tidak dikenal
-        greetingMessage(replyToken, source, "Hi " + sender.getDisplayName() +
-                ", aku belum  mengerti maksud kamu. Silahkan ikuti petunjuk ya :)");
-    }
-
+    // text proccessing
     private void processText(String replyToken, String messageText) {
         String[] words = messageText.trim().split("\\s+");
         String intent  = words[0];
 
-        if(intent.equalsIgnoreCase("id")) {
+        if(intent.equalsIgnoreCase("!start")) {
+            gettingStarted(replyToken, words);
+        } else if(intent.equalsIgnoreCase("id")) {
             handleRegisteringUser(replyToken, words);
         } else if (intent.equalsIgnoreCase("daftar")) {
             handleJoinAbsen(replyToken, words);
         } else if (intent.equalsIgnoreCase("teman")) {
             handleShowFriend(replyToken, words);
         }
+    }
+
+    private void gettingStarted(String replyToken, String[] words) {
+        String message = "Daftar Perintah yang dapat kamu gunakan : " +
+                "\n !daftar : untuk memasukkan daftar absen ke database" +
+                "\n !absen : untuk memulai absen" +
+                "\n !about : tentang";
+        botService.pushText(replyToken, message);
+    }
+
+    // handling programs
+    // mendaftarkan akun line
+    private void handleRegisteringUser(String replyToken, String[] words)
+    {
+        String registerMessage = null;
+        String target=words.length > 1 ? words[1] : "";
+
+        if (target.length()<=3){
+            registerMessage = "Butuh lebih dari 3 karakter untuk mencari user";
+        } else {
+            String lineId = target.substring(target.indexOf("@") + 1);
+            if(sender != null) {
+                if (!sender.getDisplayName().isEmpty() && (lineId.length() > 0)) {
+                    if (dbService.regLineID(sender.getUserId(), lineId, sender.getDisplayName()) != 0) {
+                        ShowAbsensi(replyToken, "Pendaftaran user berhasil. Tapi kamu belum mendaftarkan absennya:");
+                    } else {
+                        userNotFoundFallback(replyToken, "Gagal melakukan pendaftaran user! Ikuti petunjuk berikut ini:");
+                    }
+                } else {
+                    userNotFoundFallback(replyToken, "User tidak terdeteksi. Tambahkan dulu bot AbsenKoey sebagai teman!");
+                }
+            } else {
+                userNotFoundFallback(replyToken, "Hi, tambahkan dulu bot AbsenKoey sebagai teman!");
+            }
+        }
+    }
+
+    // mendaftarkan absen
+    private void handleRegisterAbsen(String replyToken, String[] words)
+    {
+        String registerMessage = null;
+        String no_absen = null, nama = null, no_bp  = null;
+        botService.pushText(replyToken, "Masukkan nama Anda : ");
+        no_absen = 
+
+        dbService.insertAbsen(no_absen,nama,no_bp);
+
     }
 
     private void handleShowFriend(String replyToken, String[] words) {
@@ -250,31 +337,6 @@ public class BotController {
         botService.multicast(stringSet, buttonsTemplate);
     }
 
-    private void handleRegisteringUser(String replyToken, String[] words)
-    {
-        String registerMessage = null;
-        String target=words.length > 1 ? words[1] : "";
-
-        if (target.length()<=3){
-            registerMessage = "Butuh lebih dari 3 karakter untuk mencari user";
-        } else {
-            String lineId = target.substring(target.indexOf("@") + 1);
-            if(sender != null) {
-                if (!sender.getDisplayName().isEmpty() && (lineId.length() > 0)) {
-                    if (dbService.regLineID(sender.getUserId(), lineId, sender.getDisplayName()) != 0) {
-                        ShowAbsensi(replyToken, "Pendaftaran user berhasil. Berikut daftar event yang bisa kamu ikuti:");
-                    } else {
-                        userNotFoundFallback(replyToken, "Gagal melakukan pendaftaran user! Ikuti petunjuk berikut ini:");
-                    }
-                } else {
-                    userNotFoundFallback(replyToken, "User tidak terdeteksi. Tambahkan dulu bot AbsenKoey sebagai teman!");
-                }
-            } else {
-                userNotFoundFallback(replyToken, "Hi, tambahkan dulu bot AbsenKoye sebagai teman!");
-            }
-        }
-    }
-
     private void ShowAbsensi(String replyToken) {
         ShowAbsensi(replyToken, null);
     }
@@ -289,6 +351,12 @@ public class BotController {
         }
 
 
+    }
+
+    // Fallback Method
+    private void handleFallbackMessage(String replyToken, Source source) {                              // pesan tidak dikenal
+        greetingMessage(replyToken, source, "Hi " + sender.getDisplayName() +
+                ", aku belum  mengerti maksud kamu. Silahkan ikuti petunjuk ya :)");
     }
 
     private void userNotFoundFallback(String replyToken)
@@ -307,6 +375,4 @@ public class BotController {
         botService.replyText(replyToken, messages.toArray(new String[messages.size()]));
         return;
     }
-
-
 }

@@ -16,18 +16,24 @@ import com.linecorp.bot.model.event.source.UserSource;
 import com.linecorp.bot.model.message.TextMessage;
 import com.linecorp.bot.model.objectmapper.ModelObjectMapper;
 import com.linecorp.bot.model.profile.UserProfileResponse;
+import live.andiirham.absenkoey.Model.DataSiswa;
 import live.andiirham.absenkoey.Model.LineEventsModel;
 import live.andiirham.absenkoey.Service.BotService;
 import live.andiirham.absenkoey.Service.BotTemplate;
 import live.andiirham.absenkoey.Service.DBService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.xml.crypto.Data;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -47,6 +53,8 @@ public class BotController {
     private DBService dbService;
 
     private UserProfileResponse sender = null;
+    private DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    private Date date = new Date();
 
     // webhook response
     @RequestMapping(value = "/webhook", method = RequestMethod.POST)
@@ -131,8 +139,8 @@ public class BotController {
             greetingMessage(replyToken, source, null);                                    // pesan pembuka
         }
     }
-
-    private void handleTextMessage(String replyToken, TextMessageContent content, Source source)          // handle untuk pesan tipe text
+    // handle untuk pesan tipe text
+    private void handleTextMessage(String replyToken, TextMessageContent content, Source source)
     {
         if (source instanceof GroupSource) {
             handleGroupChats(replyToken, content.getText(), ((GroupSource) source).getGroupId());
@@ -146,7 +154,8 @@ public class BotController {
     }
 
     // handling chats
-    private void handleRoomChats(String replyToken, String textMessage, String roomId)                    // handle untuk RoomChat
+    // handle untuk RoomChat
+    private void handleRoomChats(String replyToken, String textMessage, String roomId)
     {
         String msgText = textMessage.toLowerCase();
         if (msgText.contains("bot leave")) {
@@ -163,8 +172,8 @@ public class BotController {
             handleFallbackMessage(replyToken, new RoomSource(roomId, sender.getUserId()));
         }
     }
-
-    private void handleGroupChats(String replyToken, String textMessage, String groupId)                  // handle untuk GroupChat
+    // handle untuk GroupChat
+    private void handleGroupChats(String replyToken, String textMessage, String groupId)
     {
         String msgText = textMessage.toLowerCase();
         if (msgText.contains("bot leave")) {
@@ -177,19 +186,22 @@ public class BotController {
         ) {
             processText(replyToken, textMessage);
         }   // tambahkan pesan disini
+        else if(msgText.contains("start bot")){
+            gettingStarted();
+        }
         else {
             handleFallbackMessage(replyToken, new GroupSource(groupId, sender.getUserId()));
         }
     }
-
-    private void handleOneOnOneChats(String replyToken, String textMessage)                               // peladen One - One chat
+    // peladen One - One chat
+    private void handleOneOnOneChats(String replyToken, String textMessage)
     {
         String msgText = textMessage.toLowerCase();
         if (msgText.contains("id")
                 || msgText.contains("find")
                 || msgText.contains("join")
                 || msgText.contains("teman")
-        )                                                                   // jika pesan mengandung keyword !Start
+        )
         {
             processText(replyToken, msgText);
         }   // tambahkan pesan disini
@@ -215,6 +227,7 @@ public class BotController {
         }
     }
 
+    // help centre
     private void gettingStarted() {
         String message = "Daftar Perintah yang dapat kamu gunakan : " +
                 "\n !daftar : untuk memasukkan daftar absen ke database" +
@@ -249,7 +262,6 @@ public class BotController {
             }
         }
     }
-
     // mendaftarkan absen
     private void handleRegisterAbsen(String replyToken, String[] words)
     {
@@ -257,8 +269,9 @@ public class BotController {
         String no_absen = target.substring(target.indexOf("_") + 1);
         String nama = target.substring(target.indexOf("__") + 1);
         String nobp = target.substring(target.indexOf("___") + 1);
+        String user_id = sender.getUserId();
 
-        int AbsenStatus = dbService.insertAbsen(no_absen, nama, nobp);
+        int AbsenStatus = dbService.insertAbsen(no_absen, nama, nobp, user_id);
 
         if (AbsenStatus == -1) {
             String Message = "Kamu telah terdaftar dalam absen";
@@ -272,8 +285,34 @@ public class BotController {
             //broadcastNewFriendRegistered(no_absen);
         }
     }
+    // input absen
+    private void ambilAbsen(String replyToken, String[] words)
+    {
+        String target = words.length > 2 ? words[2] : "";
+        String user_id = sender.getUserId();
+        DataSiswa ds = (DataSiswa) dbService.getAbsenByUserId(user_id);
+        String tanggal = dateFormat.format(date);
+        String no_absen = ds.getNo_abs();
+        String nama = ds.getNama();
+        String no_bp = ds.getNo_bp();
 
-    /*private void handleShowFriend(String replyToken, String[] words) {
+        int absensiStatus = dbService.ambilAbsen(user_id, no_absen, nama, no_bp, tanggal);
+        if (absensiStatus == -1) {
+            String Message = "Kamu telah terdaftar dalam absen";
+            botService.replyText(replyToken, Message);
+            return;
+        }
+
+        if (absensiStatus == 1) {
+            String Message = "Pendaftaran berhasil! berikut daftar absensi ";
+            botService.replyText(replyToken, Message);
+            //broadcastNewFriendRegistered(no_absen);
+        }
+    }
+
+    // core programs
+    private void handleShowFriend(String replyToken, String[] words)
+    {
         String target       = StringUtils.join(words, " ");
         String no_absen     = target.substring(target.indexOf("#") + 1).trim();
 
@@ -296,8 +335,8 @@ public class BotController {
             botService.replyText(replyToken, "Absen tidak terdaftar!");
         }
     }
-*/
-   /* private void handleJoinAbsen(String replyToken, String[] words) {
+    private void handleJoinAbsen(String replyToken, String[] words)
+    {
         String target       = words.length > 2 ? words[2] : "";
         String no_absen     = target.substring(target.indexOf("#") + 1);
         String nama         = target.substring(target.indexOf("?") + 1);
@@ -330,8 +369,8 @@ public class BotController {
 
         botService.replyText(replyToken, "yah, kamu gagal bergabung event :(");
     }
-*/
-  /*  private void broadcastNewFriendRegistered(String no_absen){
+    private void broadcastNewFriendRegistered(String no_absen)
+    {
         List<String> listIds;
         List<DataSiswa> getAbsen = dbService.getAbsen(no_absen);
 
@@ -347,11 +386,9 @@ public class BotController {
         TemplateMessage buttonsTemplate = botTemplate.createButton(msg, "Lihat Teman", "teman #" + no_absen);
         botService.multicast(stringSet, buttonsTemplate);
     }
-*/
     private void ShowAbsensi(String replyToken) {
         ShowAbsensi(replyToken, null);
     }
-
     private void ShowAbsensi(String replyToken, String additionalInfo)
     {
         String userFound = dbService.findUser(sender.getUserId());
@@ -360,8 +397,6 @@ public class BotController {
         {
             userNotFoundFallback(replyToken);
         }
-
-
     }
 
     // Fallback Method
@@ -369,12 +404,10 @@ public class BotController {
         greetingMessage(replyToken, source, "Hi " + sender.getDisplayName() +
                 ", aku belum  mengerti maksud kamu. Silahkan ikuti petunjuk ya :)");
     }
-
     private void userNotFoundFallback(String replyToken)
     {
         userNotFoundFallback(replyToken, null);
     }
-
     private void userNotFoundFallback(String replyToken, String additionalInfo)
     {
         List<String> messages = new ArrayList<>();

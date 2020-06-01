@@ -64,7 +64,8 @@ public class RsExtractor {
                         rs.getLong("id"),
                         rs.getString("no_absen"),
                         rs.getString("nama"),
-                        rs.getString("no_bp")
+                        rs.getString("no_bp"),
+                        rs.getString("user_id")
                 );
             }
             return null;
@@ -84,7 +85,8 @@ public class RsExtractor {
                         rs.getLong("id"),
                         rs.getString("no_absen"),
                         rs.getString("nama"),
-                        rs.getString("no_bp")
+                        rs.getString("no_bp"),
+                        rs.getString("user_id")
                 );
                 list.add(ds);
             }

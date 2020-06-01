@@ -29,7 +29,7 @@ public class BotTemplate
 
     public String greetingMessage(Source source, UserProfileResponse sender)
     {
-        String message = "Hi %s! terimakasih telah mengundang bot AbsenKoey! \n ketik \"!Start\" untuk memulai.";
+        String message = "Hi %s! terimakasih telah mengundang bot AbsenKoey! \n ketik \"start bot\" untuk memulai.";
 
         if (source instanceof GroupSource){
             message = String.format(message, "Group");}

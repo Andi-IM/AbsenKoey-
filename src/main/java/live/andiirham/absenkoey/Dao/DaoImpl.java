@@ -23,8 +23,9 @@ public class DaoImpl implements Dao
     // query untuk table absen
     private final static String ABSEN_TABLE="tbl_absen";
     private final static String SQL_SELECT_ALL_ABSEN="SELECT id, no_absen, nama, no_bp FROM "+ABSEN_TABLE;
-    private final static String SQL_INSERT_ABSEN="INSERT INTO "+ABSEN_TABLE+"(no_absen, nama, no_bp) VALUES (?,?,?);";
-    private static final String SQL_GET_BY_ABSEN = SQL_SELECT_ALL_ABSEN + "WHERE no_absen LIKE (?);";
+    private final static String SQL_INSERT_ABSEN="INSERT INTO "+ABSEN_TABLE+"(no_absen, nama, no_bp, user_id) VALUES (?,?,?,?);";
+    private final static String SQL_GET_BY_ABSEN = SQL_SELECT_ALL_ABSEN + "WHERE no_absen LIKE (?);";
+    private final static String SQL_ABSEN_GET_BY_USER_ID = SQL_SELECT_ALL_ABSEN + "WHERE user_id LIKE (?);";
 
     // query untuk table absensi
     private final static String ABSENSI_TABLE = "tbl_absensi";
@@ -62,8 +63,8 @@ public class DaoImpl implements Dao
     }
 
     @Override
-    public int daftarAbsen(String no_absen, String nama, String no_bp) {
-        return mJdbc.update(SQL_INSERT_ABSEN, new Object[]{no_absen, nama, no_bp});
+    public int daftarAbsen(String no_absen, String nama, String no_bp, String userId) {
+        return mJdbc.update(SQL_INSERT_ABSEN, new Object[]{no_absen, nama, no_bp, userId});
     }
 
     @Override
@@ -75,6 +76,11 @@ public class DaoImpl implements Dao
     public List<DataSiswa> getAbsen()
     {
         return mJdbc.query(SQL_SELECT_ALL_ABSEN, MULTIPLE_RS_EXTRACTOR_ABSEN);
+    }
+
+    @Override
+    public List<DataSiswa> getAbsenByUserId(String aUserId) {
+        return mJdbc.query(SQL_ABSEN_GET_BY_USER_ID,new Object[]{"%"+aUserId+"%"}, MULTIPLE_RS_EXTRACTOR_ABSEN);
     }
 
     @Override

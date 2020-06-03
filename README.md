@@ -3,3 +3,5 @@
 _Line Bot project_ 
 
 Bot Absensi Semi-Manual dengan perintah bot
+
+Status : Pending
